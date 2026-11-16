@@ -6,7 +6,8 @@ metadata:
 data:
   MONGODB_URI: "mongodb://mongodb-service:27017/easyshop"
   NODE_ENV: "production"
-  NEXT_PUBLIC_API_URL: "https://easyshop.letsdeployit.com/api"
-  NEXTAUTH_URL: "https://easyshop.letsdeployit.com/"
-  NEXTAUTH_SECRET: "HmaFjYZ2jbUK7Ef+wZrBiJei4ZNGBAJ5IdiOGAyQegw="
-  JWT_SECRET: "e5e425764a34a2117ec2028bd53d6f1388e7b90aeae9fa7735f2469ea3a6cc8c"
+  # No domain yet: access the app via any EKS node public IP on NodePort 30000.
+  # Replace REPLACE_WITH_NODE_PUBLIC_IP with a value from `terraform output eks_node_group_public_ips`.
+  NEXT_PUBLIC_API_URL: "http://REPLACE_WITH_NODE_PUBLIC_IP:30000/api"
+  NEXTAUTH_URL: "http://REPLACE_WITH_NODE_PUBLIC_IP:30000"
+  # NEXTAUTH_SECRET and JWT_SECRET now live ONLY in the easyshop-secrets Secret (05-secrets.yaml).

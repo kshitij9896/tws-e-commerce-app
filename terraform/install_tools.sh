@@ -1,44 +1,50 @@
 #!/bin/bash
 
+# Prevent interactive prompts from blocking the installation
+export DEBIAN_FRONTEND=noninteractive
+
 # Update system and install core packages
-sudo apt update
-sudo apt install -y fontconfig openjdk-17-jre 
+sudo apt-get update -y
+sudo apt-get install -y fontconfig openjdk-21-jre wget apt-transport-https gnupg lsb-release snapd
 
-# Jenkins installation
-sudo wget -O /usr/share/keyrings/jenkins-keyring.asc \
-  https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
-echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc]" \
-  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
-  /etc/apt/sources.list.d/jenkins.list > /dev/null
-sudo apt-get update
-sudo apt-get -y install jenkins
+# 1. Corrected & Updated Jenkins Installation
+sudo mkdir -p /usr/share/keyrings
+sudo wget -O /usr/share/keyrings/jenkins-keyring.asc https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
 
-sudo systemctl start jenkins
+# Single-line repository entry to prevent formatting breaks
+echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+
+sudo apt-get update -y
+sudo apt-get install -y jenkins
+
+# Ensure Jenkins service starts up cleanly
+sudo systemctl daemon-reload
 sudo systemctl enable jenkins
+sudo systemctl start jenkins
 
-# Docker installation
-sudo apt-get update
+# 2. Docker installation & User configuration
 sudo apt-get install docker.io -y
+sudo systemctl enable docker
+sudo systemctl start docker
 
-# User group permission
-sudo usermod -aG docker $USER
+# Explicitly add both root, jenkins, and the default ubuntu user to docker groups
+sudo usermod -aG docker ubuntu
 sudo usermod -aG docker jenkins
+sudo usermod -aG docker root
 
-sudo systemctl restart docker
-sudo systemctl restart jenkins
+# 3. Trivy Security Scanner Installation (Updated Key Management)
+sudo mkdir -p /etc/apt/keyrings
+wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /etc/apt/keyrings/trivy.gpg > /dev/null
+echo "deb [signed-by=/etc/apt/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
 
-# Install dependencies and Trivy
-sudo apt-get install wget apt-transport-https gnupg lsb-release snapd -y
-wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
 sudo apt-get update -y
 sudo apt-get install trivy -y
 
-# AWS CLI installation
+# 4. Snap Utilities (AWS CLI, Helm, Kubectl)
 sudo snap install aws-cli --classic
-
-# Helm installation
 sudo snap install helm --classic
-
-# Kubectl installation
 sudo snap install kubectl --classic
+
+# Final service restart to finalize permissions
+sudo systemctl restart docker
+sudo systemctl restart jenkins
