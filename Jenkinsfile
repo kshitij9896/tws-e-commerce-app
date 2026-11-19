@@ -43,7 +43,7 @@ pipeline {
         stage('Lint') {
             steps {
                 catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                    sh 'docker run --rm -v "$PWD":/app -w /app node:18-alpine sh -c "npm ci && npm run lint"'
+                    sh 'docker run --rm --user "$(id -u):$(id -g)" -e npm_config_cache=/tmp/.npm -e HOME=/tmp -v "$PWD":/app -w /app node:18-alpine sh -c "npm ci && npm run lint"'
                 }
             }
         }
